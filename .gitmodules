@@ -1,0 +1,3 @@
+[submodule "auth-ms"]
+	path = auth-ms
+	url = git@github.com:TFG-Food-Delivery/Authentication-MS.git
