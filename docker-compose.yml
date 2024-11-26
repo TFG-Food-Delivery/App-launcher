@@ -7,7 +7,7 @@ services:
     api-gateway:
         build: ./api-gateway
         ports:
-            - ${CLIENT_GATEWAY_PORT}:3000
+            - ${CLIENT_GATEWAY_PORT}:${CLIENT_GATEWAY_PORT}
         volumes:
             - ./api-gateway/src:/usr/src/app/src
         command: npm run start:dev
@@ -15,42 +15,27 @@ services:
             - PORT=3000
             - NATS_SERVERS=nats://nats-server:4222
 
-    restaurant-ms:
-        depends_on:
-            - postgres
-        build: ./restaurant-ms
-        volumes:
-            - ./restaurant-ms/src:/usr/src/app/src
-        command: npm run start:dev
-        environment:
-            - PORT=3001
-            - NATS_SERVERS=nats://nats-server:4222
-            - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${RESTAURANT_DB}
-
     auth-ms:
-        depends_on:
-            - postgres
         build: ./auth-ms
         volumes:
             - ./auth-ms/src:/usr/src/app/src
         command: npm run start:dev
         environment:
+            - PORT=3001
+            - NATS_SERVERS=nats://nats-server:4222
+            - JWT_SECRET=${JWT_SECRET}
+            - LEADER_DATABASE_URL=${NEON_LEADER_DATABASE_URL}${AUTH_DB}?sslmode=require
+            - FOLLOWER1_DATABASE_URL=${NEON_FOLLOWER1_DATABASE_URL}${AUTH_DB}?sslmode=require
+            - FOLLOWER2_DATABASE_URL=${NEON_FOLLOWER2_DATABASE_URL}${AUTH_DB}?sslmode=require
+
+    restaurants-ms:
+        build: ./restaurant-ms
+        volumes:
+            - ./restaurant-ms/src:/usr/src/app/src
+        command: npm run start:dev
+        environment:
             - PORT=3002
             - NATS_SERVERS=nats://nats-server:4222
-            - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${AUTH_DB}
-            - JWT_SECRET=${JWT_SECRET}
-
-    postgres:
-        container_name: postgres-container
-        image: postgres:16.3
-        restart: always
-        volumes:
-            - postgres-data:/var/lib/postgresql/data
-            - ./init-scripts:/docker-entrypoint-initdb.d
-        ports:
-            - 5432:5432
-        environment:
-            - POSTGRES_USER=${POSTGRES_USER}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-volumes:
-    postgres-data:
+            - LEADER_DATABASE_URL=${NEON_LEADER_DATABASE_URL}${RESTAURANT_DB}?sslmode=require
+            - FOLLOWER1_DATABASE_URL=${NEON_FOLLOWER1_DATABASE_URL}${RESTAURANT_DB}?sslmode=require
+            - FOLLOWER2_DATABASE_URL=${NEON_FOLLOWER2_DATABASE_URL}${RESTAURANT_DB}?sslmode=require
