@@ -1,6 +1,8 @@
 services:
     nats-server:
         image: nats:latest
+        networks:
+            - tfg-network
         ports:
             - 8222:8222
 
@@ -11,6 +13,8 @@ services:
         volumes:
             - ./api-gateway/src:/usr/src/app/src
         command: npm run start:dev
+        networks:
+            - tfg-network
         environment:
             - PORT=3000
             - NATS_SERVERS=nats://nats-server:4222
@@ -20,22 +24,137 @@ services:
         volumes:
             - ./auth-ms/src:/usr/src/app/src
         command: npm run start:dev
+        networks:
+            - tfg-network
         environment:
             - PORT=3001
             - NATS_SERVERS=nats://nats-server:4222
             - JWT_SECRET=${JWT_SECRET}
-            - LEADER_DATABASE_URL=${NEON_LEADER_DATABASE_URL}${AUTH_DB}?sslmode=require
-            - FOLLOWER1_DATABASE_URL=${NEON_FOLLOWER1_DATABASE_URL}${AUTH_DB}?sslmode=require
-            - FOLLOWER2_DATABASE_URL=${NEON_FOLLOWER2_DATABASE_URL}${AUTH_DB}?sslmode=require
+            - LEADER_DATABASE_URL=${LEADER_DATABASE_URL}${AUTH_DB}?schema=public
+            # - FOLLOWER1_DATABASE_URL=${FOLLOWER1_DATABASE_URL}${AUTH_DB}?sslmode=require
+            # - FOLLOWER2_DATABASE_URL=${FOLLOWER2_DATABASE_URL}${AUTH_DB}?sslmode=require
+            - FIREBASE_TYPE=${FIREBASE_TYPE}
+            - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+            - FIREBASE_PRIVATE_KEY_ID=${FIREBASE_PRIVATE_KEY_ID}
+            - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+            - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+            - FIREBASE_CLIENT_ID=${FIREBASE_CLIENT_ID}
+            - FIREBASE_AUTH_URI=${FIREBASE_AUTH_URI}
+            - FIREBASE_TOKEN_URI=${FIREBASE_TOKEN_URI}
+            - FIREBASE_AUTH_PROVIDER_X509_CERT_URL=${FIREBASE_AUTH_PROVIDER_X509_CERT_URL}
+            - FIREBASE_CLIENT_X509_CERT_URL=${FIREBASE_CLIENT_X509_CERT_URL}
+            - FIREBASE_UNIVERSE_DOMAIN=${FIREBASE_UNIVERSE_DOMAIN}
+            - AWS_REGION=${AWS_REGION}
+            - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
 
     restaurants-ms:
         build: ./restaurant-ms
         volumes:
             - ./restaurant-ms/src:/usr/src/app/src
         command: npm run start:dev
+        networks:
+            - tfg-network
+        environment:
+            - PORT=3001
+            - NATS_SERVERS=nats://nats-server:4222
+            - LEADER_DATABASE_URL=${LEADER_DATABASE_URL}${RESTAURANT_DB}?schema=public
+            # - FOLLOWER1_DATABASE_URL=${FOLLOWER1_DATABASE_URL}${RESTAURANT_DB}?sslmode=require
+            # - FOLLOWER2_DATABASE_URL=${FOLLOWER2_DATABASE_URL}${RESTAURANT_DB}?sslmode=require
+            - AWS_REGION=${AWS_REGION}
+            - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+
+    customers-ms:
+        build: ./customer-ms
+        volumes:
+            - ./customer-ms/src:/usr/src/app/src
+        command: npm run start:dev
+        networks:
+            - tfg-network
         environment:
             - PORT=3002
             - NATS_SERVERS=nats://nats-server:4222
-            - LEADER_DATABASE_URL=${NEON_LEADER_DATABASE_URL}${RESTAURANT_DB}?sslmode=require
-            - FOLLOWER1_DATABASE_URL=${NEON_FOLLOWER1_DATABASE_URL}${RESTAURANT_DB}?sslmode=require
-            - FOLLOWER2_DATABASE_URL=${NEON_FOLLOWER2_DATABASE_URL}${RESTAURANT_DB}?sslmode=require
+            - LEADER_DATABASE_URL=${LEADER_DATABASE_URL}${CUSTOMER_DB}?schema=public
+            # - FOLLOWER1_DATABASE_URL=${FOLLOWER1_DATABASE_URL}${CUSTOMER_DB}?sslmode=require
+            # - FOLLOWER2_DATABASE_URL=${FOLLOWER2_DATABASE_URL}${CUSTOMER_DB}?sslmode=require
+
+    couriers-ms:
+        build: ./courier-ms
+        volumes:
+            - ./courier-ms/src:/usr/src/app/src
+        command: npm run start:dev
+        networks:
+            - tfg-network
+        environment:
+            - PORT=3003
+            - NATS_SERVERS=nats://nats-server:4222
+            - LEADER_DATABASE_URL=${LEADER_DATABASE_URL}${COURIER_DB}?schema=public
+            # - FOLLOWER1_DATABASE_URL=${FOLLOWER1_DATABASE_URL}${COURIER_DB}?sslmode=require
+            # - FOLLOWER2_DATABASE_URL=${FOLLOWER2_DATABASE_URL}${COURIER_DB}?sslmode=require
+
+    orders-ms:
+        build: ./orders-ms
+        volumes:
+            - ./orders-ms/src:/usr/src/app/src
+        command: npm run start:dev
+        networks:
+            - tfg-network
+        environment:
+            - PORT=3004
+            - NATS_SERVERS=nats://nats-server:4222
+            - ORDERS_DATABASE_URL=${ORDERS_DATABASE_URL}
+            # - FOLLOWER1_DATABASE_URL=${FOLLOWER1_DATABASE_URL}${COURIER_DB}?sslmode=require
+            # - FOLLOWER2_DATABASE_URL=${FOLLOWER2_DATABASE_URL}${COURIER_DB}?sslmode=require
+
+    notifications-ms:
+        build: ./notifications-ms
+        volumes:
+            - ./notifications-ms/src:/usr/src/app/src
+        command: npm run start:dev
+        networks:
+            - tfg-network
+        ports:
+            - 3005:3005
+        environment:
+            - PORT=3005
+            - NATS_SERVERS=nats://nats-server:4222
+            - EMAIL_HOST=${EMAIL_HOST}
+            - EMAIL_USERNAME=${EMAIL_USERNAME}
+            - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+
+    payments-ms:
+        build: ./payments-ms
+        volumes:
+            - ./payments-ms/src:/usr/src/app/src
+        command: npm run start:dev
+        networks:
+            - tfg-network
+        ports:
+            - ${PAYMENTS_MS_PORT}:${PAYMENTS_MS_PORT}
+        environment:
+            - PORT=3006
+            - NATS_SERVERS=nats://nats-server:4222
+            - STRIPE_SECRET=${STRIPE_SECRET}
+            - STRIPE_ENDPOINT_SECRET=${STRIPE_ENDPOINT_SECRET}
+            - STRIPE_SUCCESS_URL=${STRIPE_SUCCESS_URL}
+            - STRIPE_CANCEL_URL=${STRIPE_CANCEL_URL}
+
+    delivery-ms:
+        build: ./delivery-ms
+        volumes:
+            - ./delivery-ms/src:/usr/src/app/src
+        command: npm run start:dev
+        networks:
+            - tfg-network
+        ports:
+            - 3007:3007
+        environment:
+            - PORT=3007
+            - NATS_SERVERS=nats://nats-server:4222
+
+networks:
+    tfg-network:
+        external: true

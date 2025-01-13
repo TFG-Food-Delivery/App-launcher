@@ -1,0 +1,23 @@
+services:
+    postgres:
+        image: postgres:15
+        container_name: postgres_server
+        restart: always
+        environment:
+            POSTGRES_USER: root
+            POSTGRES_PASSWORD: root
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./init-db:/docker-entrypoint-initdb.d
+        networks:
+            - tfg-network
+
+volumes:
+    postgres_data:
+        driver: local
+
+networks:
+    tfg-network:
+        external: true
